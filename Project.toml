@@ -8,8 +8,10 @@ version = "0.1.0"
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
 ConstraintProgrammingExtensions = "b65d079e-ed98-51d9-b0db-edee61a5c5f8"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+Chuffed_jll = "77125aae-c893-5498-99e3-e30470bfa328"
 
 [compat]
 julia = "^1.5"
 MathOptInterface = "^0.9"
 ConstraintProgrammingExtensions = "^0.4"
+Chuffed_jll = "=0.10.4"

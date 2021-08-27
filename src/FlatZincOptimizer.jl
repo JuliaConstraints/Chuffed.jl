@@ -1,3 +1,5 @@
+# TODO: introduce a way for solvers to indicate that they support some features. For now, only the barest FZN file is generated, with extremely little structure.
+
 # Abstract interface for FZN solvers. 
 # Based on AmplNLWriter.jl's AbstractSolverCommand and call_solver.
 
@@ -151,15 +153,15 @@ Optimizer(solver_command)
 function Optimizer(
     solver_command::Union{AbstractFznSolverCommand, String, Function}="",
     solver_args::Vector{String}=String[];
-    stdin::IO=stdin,
-    stdout::IO=stdout,
+    stdin_::IO=stdin,
+    stdout_::IO=stdout,
 )
     return Optimizer(
-        MOI.FileFormats.NL.Model(),
+        CP.FlatZinc.Optimizer(),
         _solver_command(solver_command),
         Dict{String, String}(opt => "" for opt in solver_args),
-        stdin,
-        stdout,
+        stdin_,
+        stdout_,
         _NLResults(),
         NaN,
     )
@@ -169,7 +171,7 @@ Base.show(io::IO, ::Optimizer) = print(io, "A FlatZinc (flattened MiniZinc) mode
 
 MOI.get(model::Optimizer, ::MOI.SolverName) = "FlatZincWriter"
 
-MOI.supports(::Optimizer, ::MOI.Name) = true
+MOI.supports(::Optimizer, ::MOI.Name) = MOI.supports(model.inner, MOI.Name())
 
 MOI.get(model::Optimizer, ::MOI.Name) = MOI.get(model.inner, MOI.Name())
 
@@ -180,13 +182,8 @@ end
 
 function MOI.empty!(model::Optimizer)
     MOI.empty!(model.inner)
-    model.results = _NLResults(
-        "Optimize not called.",
-        MOI.OPTIMIZE_NOT_CALLED,
-        MOI.NO_SOLUTION,
-        NaN,
-        Dict{MOI.VariableIndex, Float64}(),
-    )
+    # Only two attributes to empty, the other ones link the actual solver.
+    model.results = _NLResults()
     model.solve_time = NaN
     return
 end

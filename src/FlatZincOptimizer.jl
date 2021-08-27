@@ -56,6 +56,11 @@ function call_fzn_solver(
 end
 
 # MOI wrapper.
+# Based on AmplNLWriter.jl's _NLResults and Optimizer. _solver_command is 
+# copy-pasted.
+# The main difference is that typical solutions do not have a Float64 type,
+# but rather Int. However, it all depends on the actual FZN solver that is
+# used below (some of them can still deal with floats).
 
 struct _FznResults
     raw_status_string::String
@@ -63,6 +68,16 @@ struct _FznResults
     primal_status::MOI.ResultStatusCode
     objective_value::Real
     primal_solution::Dict{MOI.VariableIndex, Real}
+end
+
+function _FznResults()
+    return _FznResults(
+        "Optimize not called.",
+        MOI.OPTIMIZE_NOT_CALLED,
+        MOI.NO_SOLUTION,
+        NaN,
+        Dict{MOI.VariableIndex, Float64}(),
+    )
 end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
@@ -74,6 +89,22 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     results::_FznResults
     solve_time::Float64
 end
+
+"""
+    _solver_command(x::Union{Function, String})
+
+Functionify the solver command so it can be called as follows:
+
+```julia
+foo = _solver_command(x)
+foo() do path
+    run(`\$(path) args...`)
+end
+```
+"""
+_solver_command(x::String) = DefaultFznSolverCommand(f -> f(x))
+_solver_command(x::Function) = DefaultFznSolverCommand(x)
+_solver_command(x::AbstractFznSolverCommand) = x
 
 """
     Optimizer(
@@ -129,13 +160,7 @@ function Optimizer(
         Dict{String, String}(opt => "" for opt in solver_args),
         stdin,
         stdout,
-        _NLResults(
-            "Optimize not called.",
-            MOI.OPTIMIZE_NOT_CALLED,
-            MOI.NO_SOLUTION,
-            NaN,
-            Dict{MOI.VariableIndex, Float64}(),
-        ),
+        _NLResults(),
         NaN,
     )
 end
@@ -160,10 +185,7 @@ function MOI.empty!(model::Optimizer)
         MOI.OPTIMIZE_NOT_CALLED,
         MOI.NO_SOLUTION,
         NaN,
-        Dict{MOI.VariableIndex,Float64}(),
-        Float64[],
-        Dict{MOI.VariableIndex,Float64}(),
-        Dict{MOI.VariableIndex,Float64}(),
+        Dict{MOI.VariableIndex, Float64}(),
     )
     model.solve_time = NaN
     return

@@ -54,3 +54,119 @@ function call_fzn_solver(
     end
     return
 end
+
+# MOI wrapper.
+
+struct _FznResults
+    raw_status_string::String
+    termination_status::MOI.TerminationStatusCode
+    primal_status::MOI.ResultStatusCode
+    objective_value::Real
+    primal_solution::Dict{MOI.VariableIndex, Real}
+end
+
+mutable struct Optimizer <: MOI.AbstractOptimizer
+    inner::MOI.FileFormats.NL.Model
+    solver_command::AbstractFznSolverCommand
+    options::Dict{String, Any}
+    stdin::Any
+    stdout::Any
+    results::_FznResults
+    solve_time::Float64
+end
+
+"""
+    Optimizer(
+        solver_command::Union{String, Function},
+        solver_args::Vector{String};
+        stdin::Any = stdin,
+        stdout:Any = stdout,
+    )
+
+Create a new FlatZinc-backed Optimizer object.
+
+`solver_command` should be one of two things:
+
+* A `String` of the full path of a FlatZinc-compatible executable
+* A function that takes takes a function as input, initialises any environment
+  as needed, calls the input function with a path to the initialised 
+  executable, and then destructs the environment.
+
+`solver_args` is a vector of `String` arguments passed solver executable.
+However, prefer passing `key=value` options via `MOI.RawParameter`.
+Redirect IO using `stdin` and `stdout`. These arguments are passed to
+`Base.pipeline`. [See the Julia documentation for more details](https://docs.julialang.org/en/v1/base/base/#Base.pipeline-Tuple{Base.AbstractCmd}).
+
+## Examples
+
+A string to an executable:
+
+```julia
+Optimizer("/path/to/fzn.exe")
+```
+
+A custom function:
+
+```julia
+function solver_command(f::Function)
+    # Create environment...
+    ret = f("/path/to/fzn")
+    # Destruct environment...
+    return ret
+end
+Optimizer(solver_command)
+```
+"""
+function Optimizer(
+    solver_command::Union{AbstractFznSolverCommand, String, Function}="",
+    solver_args::Vector{String}=String[];
+    stdin::IO=stdin,
+    stdout::IO=stdout,
+)
+    return Optimizer(
+        MOI.FileFormats.NL.Model(),
+        _solver_command(solver_command),
+        Dict{String, String}(opt => "" for opt in solver_args),
+        stdin,
+        stdout,
+        _NLResults(
+            "Optimize not called.",
+            MOI.OPTIMIZE_NOT_CALLED,
+            MOI.NO_SOLUTION,
+            NaN,
+            Dict{MOI.VariableIndex, Float64}(),
+        ),
+        NaN,
+    )
+end
+
+Base.show(io::IO, ::Optimizer) = print(io, "A FlatZinc (flattened MiniZinc) model")
+
+MOI.get(model::Optimizer, ::MOI.SolverName) = "FlatZincWriter"
+
+MOI.supports(::Optimizer, ::MOI.Name) = true
+
+MOI.get(model::Optimizer, ::MOI.Name) = MOI.get(model.inner, MOI.Name())
+
+function MOI.set(model::Optimizer, ::MOI.Name, name::String)
+    MOI.set(model.inner, MOI.Name(), name)
+    return
+end
+
+function MOI.empty!(model::Optimizer)
+    MOI.empty!(model.inner)
+    model.results = _NLResults(
+        "Optimize not called.",
+        MOI.OPTIMIZE_NOT_CALLED,
+        MOI.NO_SOLUTION,
+        NaN,
+        Dict{MOI.VariableIndex,Float64}(),
+        Float64[],
+        Dict{MOI.VariableIndex,Float64}(),
+        Dict{MOI.VariableIndex,Float64}(),
+    )
+    model.solve_time = NaN
+    return
+end
+
+MOI.is_empty(model::Optimizer) = MOI.is_empty(model.inner)

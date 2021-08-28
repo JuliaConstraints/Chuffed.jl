@@ -171,12 +171,16 @@ Base.show(io::IO, ::Optimizer) = print(io, "A FlatZinc (flattened MiniZinc) mode
 
 MOI.get(model::Optimizer, ::MOI.SolverName) = "FlatZincWriter"
 
-MOI.supports(::Optimizer, ::MOI.Name) = MOI.supports(model.inner, MOI.Name())
+function MOI.supports(model::Optimizer, attr::MOI.AnyAttribute, x...) 
+    return MOI.supports(model.inner, attr, x...)::Bool
+end
 
-MOI.get(model::Optimizer, ::MOI.Name) = MOI.get(model.inner, MOI.Name())
+function MOI.get(model::Optimizer, attr::MOI.AnyAttribute, x...) 
+    return MOI.get(model.inner, attr, x...)
+end
 
-function MOI.set(model::Optimizer, ::MOI.Name, name::String)
-    MOI.set(model.inner, MOI.Name(), name)
+function MOI.set(model::Optimizer, attr::MOI.AnyAttribute, x...) 
+    MOI.set(model.inner, attr, x...)
     return
 end
 

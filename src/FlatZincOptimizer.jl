@@ -1,5 +1,11 @@
 # TODO: introduce a way for solvers to indicate that they support some features. For now, only the barest FZN file is generated, with extremely little structure.
 
+import MathOptInterface
+import ConstraintProgrammingExtensions
+
+const MOI = MathOptInterface
+const CP = ConstraintProgrammingExtensions
+
 # Abstract interface for FZN solvers. 
 # Based on AmplNLWriter.jl's AbstractSolverCommand and call_solver.
 
@@ -83,7 +89,7 @@ function _FznResults()
 end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
-    inner::MOI.FileFormats.NL.Model
+    inner::CP.FlatZinc.Optimizer
     solver_command::AbstractFznSolverCommand
     options::Dict{String, Any}
     stdin::Any

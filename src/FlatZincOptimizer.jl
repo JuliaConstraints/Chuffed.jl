@@ -88,6 +88,22 @@ function _FznResults()
     )
 end
 
+function _parse_to_fznresults(str::String)::Vector{_FznResults}
+    # There may be several results returned by the solver. Each solution is 
+    # separated from the others by `'-' ^ 10`.
+    results = _FznResults[]
+
+    str_split = split(str, '-' ^ 10)[1:(end - 1)]
+    n_results = length(str_split)
+    sizehint!(results, n_results)
+
+    for i in 1:n_results
+        
+    end
+
+    return results
+end
+
 mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::CP.FlatZinc.Optimizer
     solver_command::AbstractFznSolverCommand

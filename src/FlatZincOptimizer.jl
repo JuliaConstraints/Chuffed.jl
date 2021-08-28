@@ -193,3 +193,10 @@ function MOI.empty!(model::Optimizer)
 end
 
 MOI.is_empty(model::Optimizer) = MOI.is_empty(model.inner)
+
+# Specific case of dual solution: getting it must be supported, but few CP
+# solvers have it accessible (none?).
+# https://github.com/jump-dev/MathOptInterface.jl/pull/1561#pullrequestreview-740032701
+
+MOI.supports(::Optimizer, ::MOI.DualStatus) = true
+MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION

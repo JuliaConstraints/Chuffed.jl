@@ -13,7 +13,7 @@ module FZN
 include("FlatZincOptimizer.jl")
 end
 
-function Optimizer(; stdin::IO=stdin, stdout::IO=stdout,)
+function Optimizer(; stdin::IO=stdin, stdout::IO=stdout)
     return FZN.Optimizer(Chuffed_jll.run_chuffed; stdin=stdin, stdout=stdout)
 end
 

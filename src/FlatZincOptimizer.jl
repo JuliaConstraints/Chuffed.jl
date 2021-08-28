@@ -101,7 +101,8 @@ end
 """
     _solver_command(x::Union{Function, String})
 
-Functionify the solver command so it can be called as follows:
+Functionify the solver command as an [`AbstractFznSolverCommand`](@ref) object,
+so it can be called as follows:
 
 ```julia
 foo = _solver_command(x)

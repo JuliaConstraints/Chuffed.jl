@@ -153,15 +153,15 @@ Optimizer(solver_command)
 function Optimizer(
     solver_command::Union{AbstractFznSolverCommand, String, Function}="",
     solver_args::Vector{String}=String[];
-    stdin_::IO=stdin,
-    stdout_::IO=stdout,
+    stdin::IO=stdin,
+    stdout::IO=stdout,
 )
     return Optimizer(
         CP.FlatZinc.Optimizer(),
         _solver_command(solver_command),
         Dict{String, String}(opt => "" for opt in solver_args),
-        stdin_,
-        stdout_,
+        stdin,
+        stdout,
         _NLResults(),
         NaN,
     )

@@ -11,6 +11,8 @@ const CP = ConstraintProgrammingExtensions
 const COIT = CP.Test
 
 @testset "Chuffed" begin
+    include("parsing.jl")
+
     # include("api_java.jl")
     # include("MOI.jl")
 end

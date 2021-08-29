@@ -98,7 +98,7 @@ function _parse_to_fznresults(str::String)::Vector{_FznResults}
     sizehint!(results, n_results)
 
     for i in 1:n_results
-        
+        @show str_split[i]
     end
 
     return results

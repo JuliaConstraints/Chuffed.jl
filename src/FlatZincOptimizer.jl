@@ -88,17 +88,17 @@ function _FznResults()
     )
 end
 
-function _parse_to_assignments(str::String)::Vector{Dict{String, Number}}
+function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
     # There may be several results returned by the solver. Each solution is 
     # separated from the others by `'-' ^ 10`.
-    results = Dict{String, Number}[]
+    results = Dict{String, Vector{Number}}[]
 
     str_split = split(str, '-' ^ 10)[1:(end - 1)]
     n_results = length(str_split)
     sizehint!(results, n_results)
 
     for i in 1:n_results
-        push!(results, Dict{String, Number}())
+        push!(results, Dict{String, Vector{Number}}())
 
         for part in split(strip(str_split[i]), ';')
             if isempty(part)
@@ -109,13 +109,14 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Number}}
             var = strip(var)
             val = strip(val)
 
-            # Either an array or a scalar.
+            # Either an array or a scalar. Always return an array for 
+            # simplicity. A scalar is simply an array with one element.
             if !occursin("array", val)
                 # Scalar.
                 if '.' in val
-                    results[i][var] = parse(Float64, val)
+                    results[i][var] = [parse(Float64, val)]
                 else
-                    results[i][var] = parse(Int, val)
+                    results[i][var] = [parse(Int, val)]
                 end
             else
                 # Array.

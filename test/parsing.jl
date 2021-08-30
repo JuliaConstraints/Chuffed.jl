@@ -24,7 +24,7 @@ end
 @testset "Parsing FlatZinc output format" begin
     @testset "basic.fzn" begin
         out_string = "x = 3;\r\n\r\n----------\r\n"
-        @test Chuffed.FZN._parse_to_assignments(out_string) == [Dict("x" => 3)]
+        @test Chuffed.FZN._parse_to_assignments(out_string) == [Dict("x" => [3])]
     end
 
     # @testset "puzzle.fzn" begin

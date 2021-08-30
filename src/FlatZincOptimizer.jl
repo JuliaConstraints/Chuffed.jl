@@ -147,8 +147,8 @@ end
 mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::CP.FlatZinc.Optimizer
     solver_command::AbstractFznSolverCommand
-    options::Dict{String, Any}
-    stdout::Any
+    options::Dict{String, Any} # TODO: why a dict? A list of options would be enough.
+    stdout::IO
     results::_FznResults
     solve_time::Float64
 end

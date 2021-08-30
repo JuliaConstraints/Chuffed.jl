@@ -5,6 +5,7 @@
     end
 end
 
+# TODO: move to CP.
 @testset "Parsing FlatZinc output format" begin
     @testset "basic.fzn" begin
         out_string = "x = 3;\r\n\r\n----------\r\n"

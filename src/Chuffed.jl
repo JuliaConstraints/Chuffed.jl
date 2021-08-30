@@ -19,8 +19,8 @@ function run_chuffed(args)
     end
 end
 
-function Optimizer(; stdin::IO=stdin, stdout::IO=stdout)
-    return FZN.Optimizer(Chuffed_jll.run_chuffed; stdout=stdout)
+function Optimizer()
+    return FZN.Optimizer(run_chuffed)
 end
 
 end # module

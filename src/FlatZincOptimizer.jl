@@ -221,7 +221,7 @@ function Optimizer(
         _solver_command(solver_command),
         Dict{String, String}(opt => "" for opt in solver_args),
         stdout,
-        _NLResults(),
+        _FznResults(),
         NaN,
     )
 end
@@ -246,7 +246,7 @@ end
 function MOI.empty!(model::Optimizer)
     MOI.empty!(model.inner)
     # Only two attributes to empty, the other ones link the actual solver.
-    model.results = _NLResults()
+    model.results = _FznResults()
     model.solve_time = NaN
     return
 end

@@ -136,7 +136,7 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
                 results[i][var] = [_parse_fzn_value(val)]
             else
                 # Array. Several arguments: "array1d(1..2, [1, 2])", 
-                # "array2d(1..2, 1..2, [1, 2, 3, 4])"
+                # "array2d(1..2, 1..2, [1, 2, 3, 4])". 
                 # TODO: should dimensions be preserved? (First argument[s] of arrayNd.)
                 val = split(split(val, '[')[2], ']')[1]
                 results[i][var] = map(_parse_fzn_value, map(strip, split(val, ',')))

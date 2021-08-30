@@ -98,11 +98,19 @@ function _parse_fzn_value(str::AbstractString)
     end
 end
 
+"""
+    _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
+
+Parses the output of a FlatZinc-compatible solver into a list of dictionaries
+mapping the name of the variables to their values (either a scalar or a vector
+of numbers). The values are automatically transformed into the closest type
+(integer or float).
+"""
 function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
-    # There may be several results returned by the solver. Each solution is 
-    # separated from the others by `'-' ^ 10`.
     results = Dict{String, Vector{Number}}[]
 
+    # There may be several results returned by the solver. Each solution is 
+    # separated from the others by `'-' ^ 10`.
     str_split = split(str, '-' ^ 10)[1:(end - 1)]
     n_results = length(str_split)
     sizehint!(results, n_results)
@@ -110,6 +118,8 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
     for i in 1:n_results
         push!(results, Dict{String, Vector{Number}}())
 
+        # Each value is indicated in its own statement, separated by a 
+        # semi-colon.
         for part in split(strip(str_split[i]), ';')
             if isempty(part)
                 continue

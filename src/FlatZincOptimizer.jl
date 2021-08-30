@@ -22,12 +22,11 @@ abstract type AbstractFznSolverCommand end
         solver::AbstractFznSolverCommand,
         fzn_filename::String,
         options::Vector{String},
-        stdin::IO,
-        stdout::IO,
+        stdout::IO, # TODO: to keep?
     )::String
 
 Execute the `solver` given the FlatZinc file at `fzn_filename`, a vector of `options`,
-and `stdin` and `stdout`. If anything goes wrong, throw a descriptive error.
+and `stdout`. If anything goes wrong, throw a descriptive error.
 This function should not return anything.
 
 As is customary with FlatZinc solvers, the solution is output on `stdout`.
@@ -45,14 +44,12 @@ function call_fzn_solver(
     solver::DefaultFznSolverCommand,
     fzn_filename::String,
     options::Vector{String},
-    stdin::IO,
     stdout::IO,
 )
     solver.f() do solver_path
         ret = run(
             pipeline(
                 `$(solver_path) $(options) $(fzn_filename)`,
-                stdin = stdin,
                 stdout = stdout,
             ),
         )
@@ -151,7 +148,6 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::CP.FlatZinc.Optimizer
     solver_command::AbstractFznSolverCommand
     options::Dict{String, Any}
-    stdin::Any
     stdout::Any
     results::_FznResults
     solve_time::Float64
@@ -178,7 +174,6 @@ _solver_command(x::AbstractFznSolverCommand) = x
     Optimizer(
         solver_command::Union{String, Function},
         solver_args::Vector{String};
-        stdin::Any = stdin,
         stdout:Any = stdout,
     )
 
@@ -193,8 +188,8 @@ Create a new FlatZinc-backed Optimizer object.
 
 `solver_args` is a vector of `String` arguments passed solver executable.
 However, prefer passing `key=value` options via `MOI.RawParameter`.
-Redirect IO using `stdin` and `stdout`. These arguments are passed to
-`Base.pipeline`. [See the Julia documentation for more details](https://docs.julialang.org/en/v1/base/base/#Base.pipeline-Tuple{Base.AbstractCmd}).
+Redirect IO using `stdout`. These arguments are passed to `Base.pipeline`. 
+[See the Julia documentation for more details](https://docs.julialang.org/en/v1/base/base/#Base.pipeline-Tuple{Base.AbstractCmd}).
 
 ## Examples
 
@@ -219,14 +214,12 @@ Optimizer(solver_command)
 function Optimizer(
     solver_command::Union{AbstractFznSolverCommand, String, Function}="",
     solver_args::Vector{String}=String[];
-    stdin::IO=stdin,
     stdout::IO=stdout,
 )
     return Optimizer(
         CP.FlatZinc.Optimizer(),
         _solver_command(solver_command),
         Dict{String, String}(opt => "" for opt in solver_args),
-        stdin,
         stdout,
         _NLResults(),
         NaN,

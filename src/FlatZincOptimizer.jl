@@ -88,17 +88,40 @@ function _FznResults()
     )
 end
 
-function _parse_to_fznresults(str::String)::Vector{_FznResults}
+function _parse_to_assignments(str::String)::Vector{Dict{String, Number}}
     # There may be several results returned by the solver. Each solution is 
     # separated from the others by `'-' ^ 10`.
-    results = _FznResults[]
+    results = Dict{String, Number}[]
 
     str_split = split(str, '-' ^ 10)[1:(end - 1)]
     n_results = length(str_split)
     sizehint!(results, n_results)
 
     for i in 1:n_results
-        @show str_split[i]
+        push!(results, Dict{String, Number}())
+
+        for part in split(strip(str_split[i]), ';')
+            if isempty(part)
+                continue
+            end
+
+            var, val = split(part, '=')
+            var = strip(var)
+            val = strip(val)
+
+            # Either an array or a scalar.
+            if !occursin("array", val)
+                # Scalar.
+                if '.' in val
+                    results[i][var] = parse(Float64, val)
+                else
+                    results[i][var] = parse(Int, val)
+                end
+            else
+                # Array.
+                error("Not yet implemented.")
+            end
+        end
     end
 
     return results

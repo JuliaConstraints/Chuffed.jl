@@ -88,6 +88,16 @@ function _FznResults()
     )
 end
 
+function _parse_fzn_value(str::AbstractString)
+    # Heuristically guess the type of the output value: either integer or 
+    # float.
+    if '.' in str
+        return parse(Float64, str)
+    else
+        return parse(Int, str)
+    end
+end
+
 function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
     # There may be several results returned by the solver. Each solution is 
     # separated from the others by `'-' ^ 10`.
@@ -112,15 +122,14 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
             # Either an array or a scalar. Always return an array for 
             # simplicity. A scalar is simply an array with one element.
             if !occursin("array", val)
-                # Scalar.
-                if '.' in val
-                    results[i][var] = [parse(Float64, val)]
-                else
-                    results[i][var] = [parse(Int, val)]
-                end
+                # Scalar. Just a value: "1", "1.0".
+                results[i][var] = [_parse_fzn_value(val)]
             else
-                # Array.
-                error("Not yet implemented.")
+                # Array. Several arguments: "array1d(1..2, [1, 2])", 
+                # "array2d(1..2, 1..2, [1, 2, 3, 4])"
+                # TODO: should dimensions be preserved? (First argument[s] of arrayNd.)
+                val = split(split(val, '[')[2], ']')[1]
+                results[i][var] = map(_parse_fzn_value, map(strip, split(val, ',')))
             end
         end
     end

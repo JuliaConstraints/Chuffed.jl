@@ -14,16 +14,13 @@ include("FlatZincOptimizer.jl")
 end
 
 function run_chuffed(args)
-    io = IOBuffer()
-    Chuffed_jll.fznchuffed() do exe
-        return run(pipeline(`$(exe) $(args)`; stdout = io))
+    return Chuffed_jll.fznchuffed() do exe
+        String(read(`$(exe) $(args)`))
     end
-    seekstart(io)
-    return String(take!(io))
 end
 
 function Optimizer(; stdin::IO=stdin, stdout::IO=stdout)
-    return FZN.Optimizer(Chuffed_jll.run_chuffed; stdin=stdin, stdout=stdout)
+    return FZN.Optimizer(Chuffed_jll.run_chuffed; stdout=stdout)
 end
 
 end # module

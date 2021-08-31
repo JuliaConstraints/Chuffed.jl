@@ -242,6 +242,10 @@ function MOI.supports_add_constrained_variables(model::Optimizer, x::Type{S}) wh
     return MOI.supports_add_constrained_variables(model.inner, x)::Bool
 end
 
+function MOI.supports_constraint(model::Optimizer, f::Type{F}, s::Type{S}) where {F <: MOI.AbstractFunction, S <: MOI.AbstractSet}
+    return MOI.supports_constraint(model.inner, f, s)::Bool
+end
+
 function MOI.get(model::Optimizer, attr::MOI.AnyAttribute, x...) 
     return MOI.get(model.inner, attr, x...)
 end

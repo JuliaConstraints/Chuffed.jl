@@ -234,6 +234,14 @@ function MOI.supports(model::Optimizer, attr::MOI.AnyAttribute, x...)
     return MOI.supports(model.inner, attr, x...)::Bool
 end
 
+function MOI.supports_add_constrained_variable(model::Optimizer, x::Type{S}) where {S <: MOI.AbstractScalarSet}
+    return MOI.supports_add_constrained_variable(model.inner, x)::Bool
+end
+
+function MOI.supports_add_constrained_variables(model::Optimizer, x::Type{S}) where {S <: MOI.AbstractScalarSet}
+    return MOI.supports_add_constrained_variables(model.inner, x)::Bool
+end
+
 function MOI.get(model::Optimizer, attr::MOI.AnyAttribute, x...) 
     return MOI.get(model.inner, attr, x...)
 end
@@ -241,6 +249,14 @@ end
 function MOI.set(model::Optimizer, attr::MOI.AnyAttribute, x...) 
     MOI.set(model.inner, attr, x...)
     return
+end
+
+function MOI.add_variable(model::Optimizer) 
+    return MOI.add_variable(model.inner)
+end
+
+function MOI.add_constrained_variable(model::Optimizer, x::MOI.AbstractScalarSet) 
+    return MOI.add_constrained_variable(model.inner, x)
 end
 
 function MOI.empty!(model::Optimizer)

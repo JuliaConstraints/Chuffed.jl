@@ -4,6 +4,7 @@ import MathOptInterface
 import ConstraintProgrammingExtensions
 
 const MOI = MathOptInterface
+const MOIU = MOI.Utilities
 const CP = ConstraintProgrammingExtensions
 
 # Abstract interface for FZN solvers. 
@@ -261,6 +262,18 @@ end
 
 function MOI.add_constrained_variable(model::Optimizer, x::MOI.AbstractScalarSet) 
     return MOI.add_constrained_variable(model.inner, x)
+end
+
+function MOI.add_constraint(model::Optimizer, f::MOI.AbstractFunction, s::MOI.AbstractSet) 
+    return MOI.add_constraint(model.inner, f, s)
+end
+
+function MOI.copy_to(dest::Optimizer, src::MOI.ModelLike; kwargs...)
+    return MOIU.automatic_copy_to(dest, src; kwargs...)
+end
+
+function MOIU.supports_default_copy_to(::Optimizer, ::Bool)
+    return true
 end
 
 function MOI.empty!(model::Optimizer)

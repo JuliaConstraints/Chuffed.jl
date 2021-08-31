@@ -13,5 +13,5 @@ Chuffed_jll = "77125aae-c893-5498-99e3-e30470bfa328"
 [compat]
 julia = "^1.5"
 MathOptInterface = "^0.9"
-ConstraintProgrammingExtensions = "^0.4"
+ConstraintProgrammingExtensions = "^0.4.2"
 Chuffed_jll = "=0.10.4"

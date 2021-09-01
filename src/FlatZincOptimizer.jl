@@ -22,15 +22,16 @@ abstract type AbstractFznSolverCommand end
     call_fzn_solver(
         solver::AbstractFznSolverCommand,
         fzn_filename::String,
-        options::Vector{String},
-        stdout::IO, # TODO: to keep?
+        options::Vector{String};
+        stdout::IO,
     )::String
 
-Execute the `solver` given the FlatZinc file at `fzn_filename`, a vector of `options`,
-and `stdout`. If anything goes wrong, throw a descriptive error.
-This function should not return anything.
+Execute the `solver` given the FlatZinc file at `fzn_filename` and a vector 
+of `options`. If anything goes wrong, throw a descriptive error. This function
+should not return anything.
 
-As is customary with FlatZinc solvers, the solution is output on `stdout`.
+As is customary with FlatZinc solvers, the solution is output on `stdout`, 
+but this stream is automatically captured and parsed.
 """
 function call_fzn_solver end
 
@@ -73,7 +74,7 @@ struct _FznResults
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
     objective_value::Real
-    primal_solution::Dict{MOI.VariableIndex, Real}
+    primal_solutions::Vector{Dict{MOI.VariableIndex, Real}}
 end
 
 function _FznResults()
@@ -82,7 +83,7 @@ function _FznResults()
         MOI.OPTIMIZE_NOT_CALLED,
         MOI.NO_SOLUTION,
         NaN,
-        Dict{MOI.VariableIndex, Float64}(),
+        Dict{MOI.VariableIndex, Float64}[],
     )
 end
 
@@ -146,12 +147,15 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
 end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
+    # Solver to call and options.
     inner::CP.FlatZinc.Optimizer
     solver_command::AbstractFznSolverCommand
-    options::Dict{String, Any} # TODO: why a dict? A list of options would be enough.
-    stdout::IO
+    options::Vector{String}
+
+    # Results once solver called.
     results::_FznResults
-    solve_time::Float64
+    solve_time::Float64 # For the call to optimize!
+    fzn_time::Float64 # For writing the FZN file
 end
 
 """
@@ -174,8 +178,7 @@ _solver_command(x::AbstractFznSolverCommand) = x
 """
     Optimizer(
         solver_command::Union{String, Function},
-        solver_args::Vector{String};
-        stdout:Any = stdout,
+        solver_args::Vector{String},
     )
 
 Create a new FlatZinc-backed Optimizer object.
@@ -188,8 +191,8 @@ Create a new FlatZinc-backed Optimizer object.
   executable, and then destructs the environment.
 
 `solver_args` is a vector of `String` arguments passed solver executable.
-However, prefer passing `key=value` options via `MOI.RawParameter`.
-Redirect IO using `stdout`. These arguments are passed to `Base.pipeline`. 
+However, prefer passing `key=value` options via `MOI.RawParameter`. These 
+arguments are passed to `Base.pipeline`. 
 [See the Julia documentation for more details](https://docs.julialang.org/en/v1/base/base/#Base.pipeline-Tuple{Base.AbstractCmd}).
 
 ## Examples
@@ -214,15 +217,14 @@ Optimizer(solver_command)
 """
 function Optimizer(
     solver_command::Union{AbstractFznSolverCommand, String, Function}="",
-    solver_args::Vector{String}=String[];
-    stdout::IO=stdout,
+    solver_args::Vector{String}=String[],
 )
     return Optimizer(
         CP.FlatZinc.Optimizer(),
         _solver_command(solver_command),
-        Dict{String, String}(opt => "" for opt in solver_args),
-        stdout,
+        solver_args,
         _FznResults(),
+        NaN,
         NaN,
     )
 end
@@ -285,6 +287,44 @@ function MOI.empty!(model::Optimizer)
 end
 
 MOI.is_empty(model::Optimizer) = MOI.is_empty(model.inner)
+
+function MOI.optimize!(model::Optimizer)
+    start_time = time()
+
+    # Generate the FZN file.
+    temp_dir = mktempdir()
+    fzn_file = joinpath(temp_dir, "model.fzn")
+    open(io -> write(io, model.inner), fzn_file, "w")
+    
+    model.fzn_time = time() - start_time
+
+    # Call the FZN solver and gather the results in a string.
+    try
+        io = IOBuffer()
+        sol_string = call_fzn_solver(
+            model.solver_command,
+            fzn_file,
+            model.options,
+            io,
+        )
+
+        sol_parsed = _parse_to_assignments(sol_string)
+
+        model.results = _parse_to_moi_solutions(sol_parsed, model.inner)
+    catch err
+        model.results = _FznResults(
+            "Error calling the solver. Failed with: $(err)",
+            MOI.OTHER_ERROR,
+            MOI.NO_SOLUTION,
+            NaN,
+            Dict{MOI.VariableIndex, Float64}[],
+        )
+    end
+
+    # Compute the total time of solving the MOI model.
+    model.solve_time = time() - start_time
+    return
+end
 
 # Specific case of dual solution: getting it must be supported, but few CP
 # solvers have it accessible (none?).

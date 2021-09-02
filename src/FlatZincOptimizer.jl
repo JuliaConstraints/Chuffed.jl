@@ -90,6 +90,15 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
     return results
 end
 
+"""
+    _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Optimizer)
+
+Parses the output of `_parse_to_assignments` and stores the solutions into `model`.
+"""
+function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, model::Optimizer)
+    error("TODO")
+end
+
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # Solver to call and options.
     inner::CP.FlatZinc.Optimizer
@@ -214,7 +223,6 @@ function MOI.optimize!(model::Optimizer)
     model.fzn_time = time() - start_time
 
     # Call the FZN solver and gather the results in a string.
-    println(1)
     try
         io = IOBuffer()
         ret = run(
@@ -230,12 +238,10 @@ function MOI.optimize!(model::Optimizer)
         end
 
         seekstart(io)
-        s = String(take!(io))
-        @show s
+        sols_str = String(take!(io))
+        sols_parsed = _parse_to_assignments(sols_str)
 
-        sol_parsed = _parse_to_assignments(s)
-
-        model.results = _parse_to_moi_solutions(sol_parsed, model.inner)
+        model.results = _parse_to_moi_solutions(sols_parsed, model)
     catch err
         model.results = _FznResults(
             "Error calling the solver. Failed with: $(err)",

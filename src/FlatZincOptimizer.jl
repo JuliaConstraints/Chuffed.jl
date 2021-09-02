@@ -50,6 +50,8 @@ of numbers). The values are automatically transformed into the closest type
 (integer or float).
 """
 function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
+    # TODO: what about infeasibility?
+
     results = Dict{String, Vector{Number}}[]
 
     # There may be several results returned by the solver. Each solution is 

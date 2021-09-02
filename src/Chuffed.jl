@@ -14,13 +14,11 @@ include("FlatZincOptimizer.jl")
 end
 
 function run_chuffed(args)
-    return Chuffed_jll.fznchuffed() do exe
-        String(read(`$(exe) $(args)`))
-    end
+    return String(read(`$(Chuffed_jll.fznchuffed()) $(args)`))
 end
 
 function Optimizer()
-    return FZN.Optimizer(run_chuffed)
+    return FZN.Optimizer(Chuffed_jll.fznchuffed())
 end
 
 end # module

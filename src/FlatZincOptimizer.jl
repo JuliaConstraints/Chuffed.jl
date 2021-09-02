@@ -7,64 +7,8 @@ const MOI = MathOptInterface
 const MOIU = MOI.Utilities
 const CP = ConstraintProgrammingExtensions
 
-# Abstract interface for FZN solvers. 
-# Based on AmplNLWriter.jl's AbstractSolverCommand and call_solver.
-
-"""
-    AbstractFznSolverCommand
-
-An abstract type that allows overriding the call behaviour of the solver.
-See also: [`call_fzn_solver`](@ref).
-"""
-abstract type AbstractFznSolverCommand end
-
-"""
-    call_fzn_solver(
-        solver::AbstractFznSolverCommand,
-        fzn_filename::String,
-        options::Vector{String};
-        stdout::IO,
-    )::String
-
-Execute the `solver` given the FlatZinc file at `fzn_filename` and a vector 
-of `options`. If anything goes wrong, throw a descriptive error. This function
-should not return anything.
-
-As is customary with FlatZinc solvers, the solution is output on `stdout`, 
-but this stream is automatically captured and parsed.
-"""
-function call_fzn_solver end
-
-# A basic solver that respects MiniZinc's CLI.
-# Based on AmplNLWriter.jl's _DefaultSolverCommand.
-
-struct DefaultFznSolverCommand{F} <: AbstractFznSolverCommand
-    f::F
-end
-
-function call_fzn_solver(
-    solver::DefaultFznSolverCommand,
-    fzn_filename::String,
-    options::Vector{String},
-    stdout::IO,
-)
-    solver.f() do solver_path
-        ret = run(
-            pipeline(
-                `$(solver_path) $(options) $(fzn_filename)`,
-                stdout = stdout,
-            ),
-        )
-        if ret.exitcode != 0
-            error("Nonzero exit code: $(ret.exitcode)")
-        end
-    end
-    return
-end
-
 # MOI wrapper.
-# Based on AmplNLWriter.jl's _NLResults and Optimizer. _solver_command is 
-# copy-pasted.
+# Based on AmplNLWriter.jl's _NLResults and Optimizer. 
 # The main difference is that typical solutions do not have a Float64 type,
 # but rather Int. However, it all depends on the actual FZN solver that is
 # used below (some of them can still deal with floats).
@@ -149,7 +93,7 @@ end
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # Solver to call and options.
     inner::CP.FlatZinc.Optimizer
-    solver_command::AbstractFznSolverCommand
+    solver_command::Cmd
     options::Vector{String}
 
     # Results once solver called.
@@ -159,36 +103,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
 end
 
 """
-    _solver_command(x::Union{Function, String})
-
-Functionify the solver command as an [`AbstractFznSolverCommand`](@ref) object,
-so it can be called as follows:
-
-```julia
-foo = _solver_command(x)
-foo() do path
-    run(`\$(path) args...`)
-end
-```
-"""
-_solver_command(x::String) = DefaultFznSolverCommand(f -> f(x))
-_solver_command(x::Function) = DefaultFznSolverCommand(x)
-_solver_command(x::AbstractFznSolverCommand) = x
-
-"""
     Optimizer(
         solver_command::Union{String, Function},
         solver_args::Vector{String},
     )
 
-Create a new FlatZinc-backed Optimizer object.
-
-`solver_command` should be one of two things:
-
-* A `String` of the full path of a FlatZinc-compatible executable
-* A function that takes takes a function as input, initialises any environment
-  as needed, calls the input function with a path to the initialised 
-  executable, and then destructs the environment.
+Create a new FlatZinc-backed Optimizer object. `solver_command` is the path
+to the FlatZinc-compatible CLI of the solver or a `Cmd` object to call the
+solver (typically, this is useful to set environment variables).
 
 `solver_args` is a vector of `String` arguments passed solver executable.
 However, prefer passing `key=value` options via `MOI.RawParameter`. These 
@@ -197,31 +119,24 @@ arguments are passed to `Base.pipeline`.
 
 ## Examples
 
-A string to an executable:
+A string to an executable, no required argument:
 
 ```julia
 Optimizer("/path/to/fzn.exe")
-```
 
-A custom function:
+A `Cmd` object with an environment variable:
 
 ```julia
-function solver_command(f::Function)
-    # Create environment...
-    ret = f("/path/to/fzn")
-    # Destruct environment...
-    return ret
-end
-Optimizer(solver_command)
+Optimizer(Cmd(`/path/to/fzn.exe`, env=["PATH=/usr/bin"]))
 ```
 """
 function Optimizer(
-    solver_command::Union{AbstractFznSolverCommand, String, Function}="",
+    solver_command::Union{String, Cmd}="",
     solver_args::Vector{String}=String[],
 )
     return Optimizer(
         CP.FlatZinc.Optimizer(),
-        _solver_command(solver_command),
+        `$(solver_command)`,
         solver_args,
         _FznResults(),
         NaN,
@@ -299,16 +214,26 @@ function MOI.optimize!(model::Optimizer)
     model.fzn_time = time() - start_time
 
     # Call the FZN solver and gather the results in a string.
+    println(1)
     try
         io = IOBuffer()
-        sol_string = call_fzn_solver(
-            model.solver_command,
-            fzn_file,
-            model.options,
-            io,
+        ret = run(
+            pipeline(
+                `$(model.solver_command) $(model.options) $(fzn_file)`,
+                stdout=io,
+            ),
+            wait=true
         )
 
-        sol_parsed = _parse_to_assignments(sol_string)
+        if ret.exitcode != 0
+            error("Nonzero exit code: $(ret.exitcode)")
+        end
+
+        seekstart(io)
+        s = String(take!(io))
+        @show s
+
+        sol_parsed = _parse_to_assignments(s)
 
         model.results = _parse_to_moi_solutions(sol_parsed, model.inner)
     catch err

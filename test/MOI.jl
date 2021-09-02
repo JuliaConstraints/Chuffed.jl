@@ -7,7 +7,7 @@
         # @test MOI.supports_constraint(Chuffed.FZN.Optimizer(), MOI.SingleVariable, MOI.GreaterThan{Int})
         # @test MOI.supports_constraint(model, MOI.SingleVariable, MOI.GreaterThan{Int})
 
-        println(@which MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int}))
+        # println(@which MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int}))
         # println(@which MOI.supports_constraint(Chuffed.FZN.Optimizer(), MOI.SingleVariable, MOI.GreaterThan{Int}))
         # println(@which MOI.supports_constraint(model, MOI.SingleVariable, MOI.GreaterThan{Int}))
 

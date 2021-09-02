@@ -17,8 +17,8 @@ struct _FznResults
     raw_status_string::String
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
-    objective_value::Real
-    primal_solutions::Vector{Dict{MOI.VariableIndex, Real}}
+    objective_value::Real # TODO: implement this. Compute it from the solutions? Fzn doesn't really output it (unless the FZN file is tweaked).
+    primal_solutions::Vector{Dict{MOI.VariableIndex, Real}} # Solution ID -> (variable index -> value)
 end
 
 function _FznResults()
@@ -50,9 +50,12 @@ of numbers). The values are automatically transformed into the closest type
 (integer or float).
 """
 function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}}
-    # TODO: what about infeasibility?
-
     results = Dict{String, Vector{Number}}[]
+
+    # If the infeasibility marker is discovered, return an empty list.
+    if occursin("=====UNSATISFIABLE=====", str)
+        return results
+    end
 
     # There may be several results returned by the solver. Each solution is 
     # separated from the others by `'-' ^ 10`.
@@ -244,6 +247,8 @@ function MOI.optimize!(model::Optimizer)
         sols_parsed = _parse_to_assignments(sols_str)
 
         model.results = _parse_to_moi_solutions(sols_parsed, model)
+        model.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
+        model.primal_status = (length(sols_parsed) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
     catch err
         model.results = _FznResults(
             "Error calling the solver. Failed with: $(err)",
@@ -258,6 +263,9 @@ function MOI.optimize!(model::Optimizer)
     model.solve_time = time() - start_time
     return
 end
+
+# TODO: implement getting solutions.
+# TODO: implement getting several solutions.
 
 # Specific case of dual solution: getting it must be supported, but few CP
 # solvers have it accessible (none?).

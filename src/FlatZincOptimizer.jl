@@ -13,7 +13,7 @@ const CP = ConstraintProgrammingExtensions
 # but rather Int. However, it all depends on the actual FZN solver that is
 # used below (some of them can still deal with floats).
 
-struct _FznResults
+mutable struct _FznResults
     raw_status_string::String
     termination_status::MOI.TerminationStatusCode
     primal_status::MOI.ResultStatusCode
@@ -100,8 +100,24 @@ end
 
 Parses the output of `_parse_to_assignments` and stores the solutions into `model`.
 """
-function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, model::Optimizer)
-    error("TODO")
+function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, results::_FznResults)
+    @assert length(results.primal_solutions) == 0
+
+    for i in 1:length(sols)
+        sol = sols[i]
+        push!(results.primal_solutions, Dict{MOI.VariableIndex, Real}())
+
+        for (var_name, val) in sol
+            @show var_name
+            var_idx = MOI.get(model, MOI.VariableIndex, var_name)
+            @show var_idx
+            results.primal_solutions[i][var_idx] = val
+            @show results.primal_solutions[i]
+        end
+    end
+    
+    @assert length(results.primal_solutions) == length(sols)
+    return 
 end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
@@ -182,6 +198,10 @@ function MOI.get(model::Optimizer, attr::MOI.AnyAttribute, x...)
     return MOI.get(model.inner, attr, x...)
 end
 
+function MOI.get(model::Optimizer, vi::MOI.VariableIndex, name::String)
+    return MOI.get(model.inner, vi, name)
+end
+
 function MOI.set(model::Optimizer, attr::MOI.AnyAttribute, x...) 
     MOI.set(model.inner, attr, x...)
     return
@@ -246,10 +266,15 @@ function MOI.optimize!(model::Optimizer)
         sols_str = String(take!(io))
         sols_parsed = _parse_to_assignments(sols_str)
 
-        model.results = _parse_to_moi_solutions(sols_parsed, model)
-        model.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
-        model.primal_status = (length(sols_parsed) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
+        @show String(read(open(fzn_file)))
+        @show sols_str
+        @show sols_parsed
+        @show length(sols_parsed) == 0
+        _parse_to_moi_solutions(sols_parsed, model.results)
+        model.results.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
+        model.results.primal_status = (length(sols_parsed) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
     catch err
+        @show err
         model.results = _FznResults(
             "Error calling the solver. Failed with: $(err)",
             MOI.OTHER_ERROR,
@@ -257,6 +282,7 @@ function MOI.optimize!(model::Optimizer)
             NaN,
             Dict{MOI.VariableIndex, Float64}[],
         )
+        throw(err)
     end
 
     # Compute the total time of solving the MOI model.

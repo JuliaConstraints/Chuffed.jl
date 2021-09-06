@@ -264,8 +264,9 @@ function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
     return model.results.termination_status
 end
 
-# TODO: implement getting solutions.
-# TODO: implement getting several solutions.
+function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableIndex)
+    return model.results.primal_solutions[attr.N][vi]
+end
 
 # Specific case of dual solution: getting it must be supported, but few CP
 # solvers have it accessible (none?).

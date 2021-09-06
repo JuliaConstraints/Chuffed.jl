@@ -4,13 +4,8 @@
         
         @test MOI.supports_add_constrained_variable(model, MOI.Integer)
         @test MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
-        # @test MOI.supports_constraint(Chuffed.FZN.Optimizer(), MOI.SingleVariable, MOI.GreaterThan{Int})
-        # @test MOI.supports_constraint(model, MOI.SingleVariable, MOI.GreaterThan{Int})
 
-        # println(@which MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int}))
-        # println(@which MOI.supports_constraint(Chuffed.FZN.Optimizer(), MOI.SingleVariable, MOI.GreaterThan{Int}))
-        # println(@which MOI.supports_constraint(model, MOI.SingleVariable, MOI.GreaterThan{Int}))
-
+        # x ∈ {1, 2, 3}
         x, x_int = MOI.add_constrained_variable(model, MOI.Integer())
         c1 = MOI.add_constraint(model, -1 * MOI.SingleVariable(x), MOI.LessThan(-1))
         c2 = MOI.add_constraint(model, 1 * MOI.SingleVariable(x), MOI.LessThan(3))
@@ -23,8 +18,7 @@
         MOI.optimize!(model)
 
         @test MOI.get(model, MOI.TerminationStatus()) === MOI.OPTIMAL
-        
-        @show MOI.get(model, MOI.VariablePrimal(), x)
-        # @test MOI.get(model, MOI.VariablePrimal(), "x1")
+        @test MOI.get(model, MOI.VariablePrimal(), x) ∈ Set([1, 2, 3])
+        @test MOI.get(model, MOI.VariablePrimal(1), x) ∈ Set([1, 2, 3])
     end
 end

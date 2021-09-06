@@ -22,6 +22,9 @@
 
         MOI.optimize!(model)
 
-        @show MOI.get(model, MOI.TerminationStatus())
+        @test MOI.get(model, MOI.TerminationStatus()) === MOI.OPTIMAL
+        
+        @show MOI.get(model, MOI.VariablePrimal(), x)
+        # @test MOI.get(model, MOI.VariablePrimal(), "x1")
     end
 end

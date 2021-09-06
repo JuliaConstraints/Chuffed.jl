@@ -95,31 +95,6 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
     return results
 end
 
-"""
-    _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Optimizer)
-
-Parses the output of `_parse_to_assignments` and stores the solutions into `model`.
-"""
-function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, results::_FznResults)
-    @assert length(results.primal_solutions) == 0
-
-    for i in 1:length(sols)
-        sol = sols[i]
-        push!(results.primal_solutions, Dict{MOI.VariableIndex, Real}())
-
-        for (var_name, val) in sol
-            @show var_name
-            var_idx = MOI.get(model, MOI.VariableIndex, var_name)
-            @show var_idx
-            results.primal_solutions[i][var_idx] = val
-            @show results.primal_solutions[i]
-        end
-    end
-    
-    @assert length(results.primal_solutions) == length(sols)
-    return 
-end
-
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # Solver to call and options.
     inner::CP.FlatZinc.Optimizer
@@ -198,8 +173,8 @@ function MOI.get(model::Optimizer, attr::MOI.AnyAttribute, x...)
     return MOI.get(model.inner, attr, x...)
 end
 
-function MOI.get(model::Optimizer, vi::MOI.VariableIndex, name::String)
-    return MOI.get(model.inner, vi, name)
+function MOI.get(model::Optimizer, ::Type{MOI.VariableIndex}, name::String)
+    return MOI.get(model.inner, MOI.VariableIndex, name)
 end
 
 function MOI.set(model::Optimizer, attr::MOI.AnyAttribute, x...) 
@@ -266,15 +241,10 @@ function MOI.optimize!(model::Optimizer)
         sols_str = String(take!(io))
         sols_parsed = _parse_to_assignments(sols_str)
 
-        @show String(read(open(fzn_file)))
-        @show sols_str
-        @show sols_parsed
-        @show length(sols_parsed) == 0
-        _parse_to_moi_solutions(sols_parsed, model.results)
+        _parse_to_moi_solutions(sols_parsed, model)
         model.results.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
         model.results.primal_status = (length(sols_parsed) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
     catch err
-        @show err
         model.results = _FznResults(
             "Error calling the solver. Failed with: $(err)",
             MOI.OTHER_ERROR,
@@ -282,7 +252,7 @@ function MOI.optimize!(model::Optimizer)
             NaN,
             Dict{MOI.VariableIndex, Float64}[],
         )
-        throw(err)
+        # throw(err)
     end
 
     # Compute the total time of solving the MOI model.
@@ -303,3 +273,31 @@ end
 
 MOI.supports(::Optimizer, ::MOI.DualStatus) = true
 MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION
+
+# Helpers to parse FZN output.
+
+"""
+    _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Optimizer)
+
+Parses the output of `_parse_to_assignments` and stores the solutions into `model`.
+"""
+function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, model::Optimizer)
+    @assert length(model.results.primal_solutions) == 0
+
+    for i in 1:length(sols)
+        sol = sols[i]
+        push!(model.results.primal_solutions, Dict{MOI.VariableIndex, Real}())
+
+        for (var_name, val) in sol
+            # At least for now: no vector at the FlatZinc layer. Just ensure 
+            # that this is consistent.
+            @assert length(val) == 1 
+
+            var_idx = MOI.get(model, MOI.VariableIndex, var_name)
+            model.results.primal_solutions[i][var_idx] = val[1]
+        end
+    end
+    
+    @assert length(model.results.primal_solutions) == length(sols)
+    return 
+end

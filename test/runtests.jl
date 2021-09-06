@@ -14,13 +14,12 @@ const COIT = CP.Test
 # Adapted copy of AmplNLWriter's optimizer (in the tests)
 # https://github.com/jump-dev/AmplNLWriter.jl/blob/327fa0bd46b48d7b2be9bbc08e728070d89d0943/test/MOI_wrapper.jl
 function optimizer(T)
-    model = Chuffed.Optimizer()
     return MOIU.CachingOptimizer(
         MOIU.UniversalFallback(MOIU.Model{T}()),
         MOI.Bridges.full_bridge_optimizer(
             MOIU.CachingOptimizer(
                 MOIU.UniversalFallback(MOIU.Model{T}()),
-                model,
+                Chuffed.Optimizer(),
             ),
             T,
         ),

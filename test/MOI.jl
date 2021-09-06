@@ -21,5 +21,7 @@
         @test MOI.is_valid(model, c2)
 
         MOI.optimize!(model)
+
+        @show MOI.get(model, MOI.TerminationStatus())
     end
 end

@@ -264,6 +264,10 @@ function MOI.optimize!(model::Optimizer)
     return
 end
 
+function MOI.get(model::Optimizer, ::MOI.TerminationStatus)
+    return model.results.termination_status
+end
+
 # TODO: implement getting solutions.
 # TODO: implement getting several solutions.
 

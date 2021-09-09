@@ -263,8 +263,6 @@ function MOI.optimize!(model::Optimizer)
         model.parse_time = start_parse_time - time()
 
         _parse_to_moi_solutions(sols_parsed, model)
-        model.results.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
-        model.results.primal_status = (length(sols_parsed) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
     catch err
         model.results = _FznResults(
             "Error calling the solver. Failed with: $(err)",
@@ -319,7 +317,8 @@ MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION
 """
     _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Optimizer)
 
-Parses the output of `_parse_to_assignments` and stores the solutions into `model`.
+Parses the output of `_parse_to_assignments` and stores the solutions into 
+`model`. This function is responsible for filling `model.results`.
 """
 function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, model::Optimizer)
     @assert length(model.results.primal_solutions) == 0
@@ -337,6 +336,9 @@ function _parse_to_moi_solutions(sols::Vector{Dict{String, Vector{Number}}}, mod
             model.results.primal_solutions[i][var_idx] = val[1]
         end
     end
+    
+    model.results.termination_status = (length(sols) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
+    model.results.primal_status = (length(sols) == 0) ? MOI.NO_SOLUTION : MOI.FEASIBLE_POINT
     
     @assert length(model.results.primal_solutions) == length(sols)
     return 

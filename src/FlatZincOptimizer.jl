@@ -309,6 +309,9 @@ function MOI.set(model::Optimizer, ::MOI.Silent, silentness::Bool)
     model.verboseness = !silentness
 end
 
+MOI.supports(::Optimizer, ::MOI.ResultCount) = true
+MOI.get(model::Optimizer, ::MOI.ResultCount) = length(model.results.primal_solutions)
+
 # Specific case of dual solution: getting it must be supported, but few CP
 # solvers have it accessible (none?).
 # https://github.com/jump-dev/MathOptInterface.jl/pull/1561#pullrequestreview-740032701

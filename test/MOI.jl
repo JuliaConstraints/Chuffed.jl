@@ -18,6 +18,7 @@
         MOI.optimize!(model)
 
         @test MOI.get(model, MOI.TerminationStatus()) === MOI.OPTIMAL
+        @test MOI.get(model, MOI.ResultCount()) ≥ 1
         @test MOI.get(model, MOI.VariablePrimal(), x) ∈ Set([1, 2, 3])
         @test MOI.get(model, MOI.VariablePrimal(1), x) ∈ Set([1, 2, 3])
     end

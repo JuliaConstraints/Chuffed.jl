@@ -100,7 +100,7 @@ end
 
 mutable struct Optimizer <: MOI.AbstractOptimizer
     # Solver to call and options.
-    inner::CP.FlatZinc.Optimizer
+    inner::CP.FlatZinc.Model
     solver_command::Cmd
     time_limit_ms::Float64
     verboseness::Bool # True: verbose (default).
@@ -146,7 +146,7 @@ function Optimizer(
     solver_args::Vector{String}=String[],
 )
     return Optimizer(
-        CP.FlatZinc.Optimizer(),
+        CP.FlatZinc.Model(),
         `$(solver_command)`,
         0.0,
         true,
@@ -322,7 +322,7 @@ MOI.get(::Optimizer, ::MOI.DualStatus) = MOI.NO_SOLUTION
 # Helpers to parse FZN output.
 
 """
-    _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Optimizer)
+    _parse_to_assignments(sols::Vector{Dict{String, Vector{Number}}}, model::CP.FlatZinc.Model)
 
 Parses the output of `_parse_to_assignments` and stores the solutions into 
 `model`. This function is responsible for filling `model.results`.

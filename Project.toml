@@ -2,7 +2,7 @@ name = "Chuffed"
 uuid = "a105ee56-0da9-4c5a-a151-cc7e299d31db"
 authors = ["Thibaut Cuvelier <cuvelier.thibaut@gmail.com>"]
 repo = "https://github.com/dourouc05/Chuffed.jl"
-version = "0.1.1"
+version = "0.2.0"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"
@@ -13,5 +13,5 @@ Chuffed_jll = "77125aae-c893-5498-99e3-e30470bfa328"
 [compat]
 julia = "^1.5"
 MathOptInterface = "^0.9"
-ConstraintProgrammingExtensions = "^0.4.3"
+ConstraintProgrammingExtensions = "^0.5.0"
 Chuffed_jll = "=0.10.4"

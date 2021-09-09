@@ -3,7 +3,7 @@
         model = optimizer(Int)
         
         @test MOI.supports_add_constrained_variable(model, MOI.Integer)
-        @test MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
+        @test MOI.supports_constraint(CP.FlatZinc.Model(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
 
         # x ∈ {1, 2, 3}
         x, x_int = MOI.add_constrained_variable(model, MOI.Integer())
@@ -27,7 +27,7 @@
         model = optimizer(Int)
         
         @test MOI.supports_add_constrained_variable(model, MOI.Integer)
-        @test MOI.supports_constraint(CP.FlatZinc.Optimizer(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
+        @test MOI.supports_constraint(CP.FlatZinc.Model(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
 
         # x ∈ ∅
         x, x_int = MOI.add_constrained_variable(model, MOI.Integer())

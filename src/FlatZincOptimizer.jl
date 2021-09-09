@@ -234,13 +234,13 @@ function MOI.optimize!(model::Optimizer)
 
     # Generate the list of options. Always put the user-defined options at 
     # the end.
-    opts = join(model.options, " ")
+    opts = copy(model.options)
     if !iszero(model.time_limit_ms)
-        opts = "-t $(model.time_limit_ms) $(opts)"
+        prepend!(opts, ["-t $(model.time_limit_ms)"])
     end
     if model.verboseness
         # Interpret as statistics to stdout and log to stderr.
-        opts = "-s -v $(opts)"
+        prepend!(opts, ["-s", "-v"])
     end
 
     # Call the FZN solver and gather the results in a string.

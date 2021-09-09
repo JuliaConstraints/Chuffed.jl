@@ -57,6 +57,9 @@ function _parse_to_assignments(str::String)::Vector{Dict{String, Vector{Number}}
         return results
     end
 
+    # Remove comments from the output (starting with % and ending with a new line).
+    str = replace(str, r"%(.*)(\\r|\\n|\\r\\n)" => s"")
+
     # There may be several results returned by the solver. Each solution is 
     # separated from the others by `'-' ^ 10`.
     str_split = split(str, '-' ^ 10)[1:(end - 1)]
@@ -231,12 +234,13 @@ function MOI.optimize!(model::Optimizer)
 
     # Generate the list of options. Always put the user-defined options at 
     # the end.
-    opts = copy(model.options)
+    opts = join(model.options, " ")
     if !iszero(model.time_limit_ms)
         opts = "-t $(model.time_limit_ms) $(opts)"
     end
     if model.verboseness
-        opts = "-s $(opts)"
+        # Interpret as statistics to stdout and log to stderr.
+        opts = "-s -v $(opts)"
     end
 
     # Call the FZN solver and gather the results in a string.

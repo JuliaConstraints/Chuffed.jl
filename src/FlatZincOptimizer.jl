@@ -100,7 +100,8 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     inner::CP.FlatZinc.Optimizer
     solver_command::Cmd
     time_limit_ms::Float64
-    options::Vector{String}
+    verboseness::Bool # True: verbose (default).
+    options::Vector{String} # Custom-set options.
 
     # Results once solver called.
     results::_FznResults
@@ -145,7 +146,9 @@ function Optimizer(
         CP.FlatZinc.Optimizer(),
         `$(solver_command)`,
         0.0,
+        true,
         solver_args,
+
         _FznResults(),
         NaN,
         NaN,
@@ -226,17 +229,22 @@ function MOI.optimize!(model::Optimizer)
     
     model.fzn_time = time() - start_time
 
+    # Generate the list of options. Always put the user-defined options at 
+    # the end.
+    opts = copy(model.options)
+    if !iszero(model.time_limit_ms)
+        opts = "-t $(model.time_limit_ms) $(opts)"
+    end
+    if model.verboseness
+        opts = "-s $(opts)"
+    end
+
     # Call the FZN solver and gather the results in a string.
     try
         io = IOBuffer()
-        cmd = if iszero(model.time_limit_ms)
-            `$(model.solver_command) $(model.options) $(fzn_file)`
-        else
-            `$(model.solver_command) -t $(model.time_limit_ms) $(model.options) $(fzn_file)`
-        end
         ret = run(
             pipeline(
-                cmd,
+                `$(model.solver_command) $(opts) $(fzn_file)`,
                 stdout=io,
             ),
             wait=true
@@ -291,6 +299,12 @@ function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real)
 end
 function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Nothing) 
     model.time_limit_ms = 0.0
+end
+
+MOI.supports(::Optimizer, ::MOI.Silent) = true
+MOI.get(model::Optimizer, ::MOI.Silent) = !model.verboseness
+function MOI.set(model::Optimizer, ::MOI.Silent, silentness::Bool) 
+    model.verboseness = !silentness
 end
 
 # Specific case of dual solution: getting it must be supported, but few CP

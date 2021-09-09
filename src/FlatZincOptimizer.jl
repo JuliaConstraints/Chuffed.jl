@@ -99,12 +99,14 @@ mutable struct Optimizer <: MOI.AbstractOptimizer
     # Solver to call and options.
     inner::CP.FlatZinc.Optimizer
     solver_command::Cmd
+    time_limit_ms::Float64
     options::Vector{String}
 
     # Results once solver called.
     results::_FznResults
     solve_time::Float64 # For the call to optimize!
     fzn_time::Float64 # For writing the FZN file
+    parse_time::Float64 # For reading the FZN solution
 end
 
 """
@@ -142,8 +144,10 @@ function Optimizer(
     return Optimizer(
         CP.FlatZinc.Optimizer(),
         `$(solver_command)`,
+        0.0,
         solver_args,
         _FznResults(),
+        NaN,
         NaN,
         NaN,
     )
@@ -225,9 +229,14 @@ function MOI.optimize!(model::Optimizer)
     # Call the FZN solver and gather the results in a string.
     try
         io = IOBuffer()
+        cmd = if iszero(model.time_limit_ms)
+            `$(model.solver_command) $(model.options) $(fzn_file)`
+        else
+            `$(model.solver_command) -t $(model.time_limit_ms) $(model.options) $(fzn_file)`
+        end
         ret = run(
             pipeline(
-                `$(model.solver_command) $(model.options) $(fzn_file)`,
+                cmd,
                 stdout=io,
             ),
             wait=true
@@ -237,9 +246,13 @@ function MOI.optimize!(model::Optimizer)
             error("Nonzero exit code: $(ret.exitcode)")
         end
 
+        start_parse_time = time()
+
         seekstart(io)
         sols_str = String(take!(io))
         sols_parsed = _parse_to_assignments(sols_str)
+
+        model.parse_time = start_parse_time - time()
 
         _parse_to_moi_solutions(sols_parsed, model)
         model.results.termination_status = (length(sols_parsed) == 0) ? MOI.INFEASIBLE : MOI.OPTIMAL
@@ -266,6 +279,18 @@ end
 
 function MOI.get(model::Optimizer, attr::MOI.VariablePrimal, vi::MOI.VariableIndex)
     return model.results.primal_solutions[attr.N][vi]
+end
+
+MOI.supports(::Optimizer, ::MOI.SolveTime) = true
+MOI.get(model::Optimizer, ::MOI.SolveTime) = model.solve_time
+
+MOI.supports(::Optimizer, ::MOI.TimeLimitSec) = true
+MOI.get(model::Optimizer, ::MOI.TimeLimitSec) = model.time_limit_ms / 1_000.0
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Real) 
+    model.time_limit_ms = limit * 1_000.0
+end
+function MOI.set(model::Optimizer, ::MOI.TimeLimitSec, limit::Nothing) 
+    model.time_limit_ms = 0.0
 end
 
 # Specific case of dual solution: getting it must be supported, but few CP

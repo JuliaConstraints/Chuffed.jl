@@ -27,6 +27,6 @@ function optimizer(T)
 end
 
 @testset "Chuffed" begin
-    include("parsing.jl")
+    include("chuffed.jl")
     include("MOI.jl")
 end

@@ -7,8 +7,8 @@
 
         # x ∈ {1, 2, 3}
         x, x_int = MOI.add_constrained_variable(model, MOI.Integer())
-        c1 = MOI.add_constraint(model, -1 * MOI.SingleVariable(x), MOI.LessThan(-1))
-        c2 = MOI.add_constraint(model, 1 * MOI.SingleVariable(x), MOI.LessThan(3))
+        c1 = MOI.add_constraint(model, -1 * x, MOI.LessThan(-1))
+        c2 = MOI.add_constraint(model, 1 * x, MOI.LessThan(3))
 
         @test MOI.is_valid(model, x)
         @test MOI.is_valid(model, x_int)
@@ -31,8 +31,8 @@
 
         # x ∈ ∅
         x, x_int = MOI.add_constrained_variable(model, MOI.Integer())
-        c1 = MOI.add_constraint(model, -1 * MOI.SingleVariable(x), MOI.LessThan(-5))
-        c2 = MOI.add_constraint(model, 1 * MOI.SingleVariable(x), MOI.LessThan(3))
+        c1 = MOI.add_constraint(model, -1 * x, MOI.LessThan(-5))
+        c2 = MOI.add_constraint(model, 1 * x, MOI.LessThan(3))
 
         @test MOI.is_valid(model, x)
         @test MOI.is_valid(model, x_int)

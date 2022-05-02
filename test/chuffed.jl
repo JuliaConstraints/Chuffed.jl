@@ -1,3 +1,8 @@
+# Copyright (c) 2021 Thibaut Cuvelier and contributors
+#
+# Use of this source code is governed by an MIT-style license that can be found
+# in the LICENSE.md file or at https://opensource.org/licenses/MIT.
+
 # TODO: move the samples to CP?? Not all solvers will understand all FZN files :/.
 @testset "Sanity check for Chuffed" begin
     @testset "basic.fzn" begin

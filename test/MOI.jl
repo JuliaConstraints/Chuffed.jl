@@ -1,7 +1,12 @@
+# Copyright (c) 2021 Thibaut Cuvelier and contributors
+#
+# Use of this source code is governed by an MIT-style license that can be found
+# in the LICENSE.md file or at https://opensource.org/licenses/MIT.
+
 @testset "MOI interface" begin
     @testset "basic.fzn" begin
         model = optimizer(Int)
-        
+
         @test MOI.supports_add_constrained_variable(model, MOI.Integer)
         @test MOI.supports_constraint(CP.FlatZinc.Model(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
 
@@ -25,7 +30,7 @@
 
     @testset "Infeasible" begin
         model = optimizer(Int)
-        
+
         @test MOI.supports_add_constrained_variable(model, MOI.Integer)
         @test MOI.supports_constraint(CP.FlatZinc.Model(), MOI.ScalarAffineFunction{Int}, MOI.LessThan{Int})
 

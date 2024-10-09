@@ -2,7 +2,7 @@ name = "Chuffed"
 uuid = "a105ee56-0da9-4c5a-a151-cc7e299d31db"
 authors = ["Thibaut Cuvelier <cuvelier.thibaut@gmail.com>"]
 repo = "https://github.com/JuliaConstraints/Chuffed.jl"
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 MathOptInterface = "b8f27783-ece8-5eb3-8dc8-9495eed66fee"

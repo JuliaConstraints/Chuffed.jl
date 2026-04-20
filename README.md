@@ -31,3 +31,6 @@ using JuMP, Chuffed
 
 model = Model(Chuffed.Optimizer)
 ```
+
+> [!note]
+> Chuffed can also be used with JuMP through [MiniZinc.jl](https://github.com/jump-dev/MiniZinc.jl/).

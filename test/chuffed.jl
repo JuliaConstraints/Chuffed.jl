@@ -15,6 +15,7 @@ normalize(x) = replace(x, "\r\n" => "\n")
     @testset "one_solution.fzn" begin
         out_string = Chuffed.run_chuffed(@__DIR__() * "/assets/one_solution.fzn")
         expected = "x = 10;\n\n----------\n==========\n"
+        # See https://github.com/chuffed/chuffed/pull/224
         unk = "% [<UNKNOWN>]\n"
         @test normalize(out_string) == expected || normalize(out_string) == expected * unk
     end
